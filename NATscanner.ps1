@@ -54,14 +54,32 @@ function techTom($ip){
 	verifyFile;
 }
 
+#Cisco DPC3925
+function cisco($ip){
+	echo "$ip - Cisco DPC3925" 
+	$cookie = "$SAVE_FOLDER\$ip"+"cookie.txt"
+    wget -qO- -q --keep-session-cookies --save-cookies $cookie --post-data "username_login=admin&password_login=Uq-4GIt3M&LanguageSelect=en&Language_Submit=0&login=Log+In" -T 3 http://$ip/goform/Docsis_system | out-null;
+	if(Test-Path $cookie){
+		wget -qO- -q --load-cookies $cookie -O $save --header="User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36" --header="Referer: http://$ip/Status.asp" --header="Connection: keep-alive" -T 3 http://$ip/WNetwork.asp | out-null;
+		verifyFile
+		Remove-Item $cookie;
+	}else{
+		echo "No se pudo obtener acceso a $ip. Verificar credenciales"
+	}
+}
+
+
+
 function runScanner(){
 	setup
 	foreach($line in Get-Content .\NATIp.txt) {
 		$title = curl --connect-timeout 3 -m 10 -s -L $line | findstr -i title
 		if(![string]::IsNullOrEmpty($title)){
-			$save = "$SAVE_FOLDER/$line.txt"
+			$save = "$SAVE_FOLDER\$line.txt"
 			switch -regex ($title){
 				".*HTTP 401 - Unauthorized.*" {techTom $line; break}
+				".*<title>Setup</title>.*" {cisco $line; break}
+				
 				
 				default {$title; Break}
 			}
