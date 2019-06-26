@@ -68,7 +68,23 @@ function cisco($ip){
 	}
 }
 
+#Tech WAN
+function wan($ip){
+echo "$ip - Wan" 
+    curl --connect-timeout 3 -s -m 10 -H 'Host: $ip' -H 'Cache-Control: max-age=0' -H 'Origin: http://$ip' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8' -H 'Referer: http://$ip/' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' --data "loginUsername=admin&loginPassword=Uq-4GIt3M" --compressed http://$ip/goform/home_loggedout | out-null;
+	curl -o $save --connect-timeout 3 -m 60 -s -H 'Host: $ip' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8' -H 'Referer: http://$ip/software.asp' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' --compressed http://$ip/wireless_network_configuration.asp;
+   	verifyFile
+}
 
+#Motorola con DOCSIS 2.0
+function motorola($ip){ 
+echo "$ip - Motorola" 
+    curl --connect-timeout 3 -m 10 -s --data "loginUsername=admin&loginPassword=Uq-4GIt3M" http://$ip/goform/login | out-null;
+    curl --connect-timeout 3 -m 10 -s --data "loginUsername=admin&loginPassword=Uq-4GIt3M" http://$ip/goform/login | out-null;
+	curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp | out-null;
+    curl --connect-timeout 3 -m 60 -s -o $save -u admin:Uq-4GIt3M -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp;
+    verifyFile
+}
 
 function runScanner(){
 	setup
@@ -79,7 +95,8 @@ function runScanner(){
 			switch -regex ($title){
 				".*HTTP 401 - Unauthorized.*" {techTom $line; break}
 				".*<title>Setup</title>.*" {cisco $line; break}
-				
+				".*<title>WAN</title>.*" {wan $line; break}
+				".*<title>Residential Gateway Login</title>.*" {motorola $line; break}
 				
 				default {$title; Break}
 			}
