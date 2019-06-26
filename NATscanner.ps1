@@ -148,6 +148,16 @@ function hitron($ip){
 	}
 }
 
+# Ubee con DOCSIS 3.0
+function ubee($ip){
+echo "$ip - Ubee" 
+    curl --connect-timeout 3 -m 10 -s -d "loginUsername=admin&loginPassword=Uq-4GIt3M" http://$ip/goform/login | out-null;
+    curl --connect-timeout 3 -m 10 -s -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/wlanRadio.asp" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp | out-null;
+    curl -o $save --connect-timeout 3 -m 60 -s -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/wlanRadio.asp" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp;
+    verifyFile
+}
+
+
 function runScanner(){
 	setup
 	foreach($line in Get-Content .\NATIp.txt) {
@@ -165,6 +175,8 @@ function runScanner(){
 				".*<title>Common UI</title>.*" {techCGA0101 $line; break}
 				".*vt_docsystem.*" {techDPC3928SL2 $line; break}
 				".*CGNV2.*" {hitron $line; break}
+				".*Touchstone.*" {"$line - Arris (No support)"; Break}
+				".*<title>Residential Gateway Configuration: Login</title>.*" {ubee $line; break}
 				default {$title; Break}
 			}
 		}
