@@ -157,6 +157,14 @@ echo "$ip - Ubee"
     verifyFile
 }
 
+#Ubee sin DOCSIS
+function ubeeA($ip){
+echo "$ip - Ubee sin DOCSIS" 
+    curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36" -H "Connection: keep-alive" --compressed http://$ip/wlanBasic.asp;
+    curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36" -H "Connection: keep-alive" --compressed http://$ip/wlanBasic.asp;
+    curl -o $save --connect-timeout 3 -m 60 -s -u admin:Uq-4GIt3M -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36" -H "Connection: keep-alive" --compressed http://$ip/wlanBasic.asp;
+    verifyFile
+}
 
 function runScanner(){
 	setup
@@ -177,6 +185,7 @@ function runScanner(){
 				".*CGNV2.*" {hitron $line; break}
 				".*Touchstone.*" {"$line - Arris (No support)"; Break}
 				".*<title>Residential Gateway Configuration: Login</title>.*" {ubee $line; break}
+				".*<title>Residential Gateway Configuration: Cable Modem - Navigation</title>.*" {ubeeA $line; break}
 				default {$title; Break}
 			}
 		}
