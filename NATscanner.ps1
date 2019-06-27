@@ -8,8 +8,13 @@ function isDownOK(){
 
 function verifyFile(){
 	Try{
-		if(isDownOK $ip){
-            (Get-Content $save) -replace '\-', ':' | Set-Content $save;
+		if(([System.IO.File]::Exists($save)){
+			if((Get-Item $save).length) -gt 500){
+				(Get-Content $save) -replace '\-', ':' | Set-Content $save;
+			}else{
+				
+			}
+            
 		}else{
 			echo "No se pudo obtener información. Verificar credenciales";
 		}
@@ -42,6 +47,46 @@ function setup(){
 	createDirectory $SAVE_FOLDER
 }
 
+# Credits to Martin9700
+# http://community.spiceworks.com/scripts/show/1887-get-telnet-telnet-to-a-device-and-issue-commands
+Function Get-Telnet{
+	Param (
+        [Parameter(ValueFromPipeline=$true)]
+        [String[]]$Commands = @("admin","password","disable clipaging","sh config"),
+        [string]$RemoteHost = "HostnameOrIPAddress",
+        [string]$Port = "23",
+        [int]$WaitTime = 2000
+    )
+    #Attach to the remote device, setup streaming requirements
+    $Socket = New-Object System.Net.Sockets.TcpClient($RemoteHost, $Port)
+    If ($Socket){   
+		$Stream = $Socket.GetStream()
+        $Writer = New-Object System.IO.StreamWriter($Stream)
+        $Buffer = New-Object System.Byte[] 1024 
+        $Encoding = New-Object System.Text.AsciiEncoding
+
+        #Now start issuing the commands
+        ForEach ($Command in $Commands){   
+			$Writer.WriteLine($Command) 
+            $Writer.Flush()
+            Start-Sleep -Milliseconds $WaitTime
+        }
+        #All commands issued, but since the last command is usually going to be
+        #the longest let's wait a little longer for it to finish
+        Start-Sleep -Milliseconds ($WaitTime * 4)
+        $Result = ""
+        #Save all the results
+        While($Stream.DataAvailable) {
+			$Read = $Stream.Read($Buffer, 0, 1024) 
+            $Result += ($Encoding.GetString($Buffer, 0, $Read))
+        }
+		$Result | Out-File $save
+    }Else{
+		echo "No se pudo conectar a $RemoteHost."
+    }
+    
+}
+
 #===================Routers=====================
 # Technicolor y Thompson que usan DOCSIS 2.0 
 function techTom($ip){
@@ -70,9 +115,8 @@ function cisco($ip){
 
 # Tech WAN
 function wan($ip){
-echo "$ip - Wan" 
-    curl --connect-timeout 3 -s -m 10 -H 'Host: $ip' -H 'Cache-Control: max-age=0' -H 'Origin: http://$ip' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8' -H 'Referer: http://$ip/' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' --data "loginUsername=admin&loginPassword=Uq-4GIt3M" --compressed http://$ip/goform/home_loggedout | out-null;
-	curl -o $save --connect-timeout 3 -m 60 -s -H 'Host: $ip' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8' -H 'Referer: http://$ip/software.asp' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' --compressed http://$ip/wireless_network_configuration.asp;
+	echo "$ip - Wan" 
+	Get-Telnet -RemoteHost "$ip" -Commands " ","admin","Uq-4GIt3M","cd wifi","show nvram" 
    	verifyFile
 }
 
