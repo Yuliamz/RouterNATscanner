@@ -1,6 +1,8 @@
 $ACTUAL_PATH = Get-Location;
 $SAVE_FOLDER = "$ACTUAL_PATH\save";
 $IPs_LIST_PATH = "$ACTUAL_PATH\NATIp.txt";
+$IPs_FAILED = "$ACTUAL_PATH\Fail.txt";
+
 
 function isDownOK(){
     return (([System.IO.File]::Exists($save) -and ((Get-Item $save).length) -gt 500))
@@ -8,11 +10,12 @@ function isDownOK(){
 
 function verifyFile(){
 	Try{
-		if(([System.IO.File]::Exists($save)){
-			if((Get-Item $save).length) -gt 500){
+		if([System.IO.File]::Exists($save)){
+			if((Get-Item $save).length -gt 500){
 				(Get-Content $save) -replace '\-', ':' | Set-Content $save;
 			}else{
-				
+				Add-Content -Path "$IPs_FAILED" -Value "$line";
+				Remove-Item $save
 			}
             
 		}else{
@@ -45,6 +48,16 @@ function setup(){
 
 	#Crear directorio donde se guardará los resultados del escaner
 	createDirectory $SAVE_FOLDER
+
+		#Archivo donde se guardan las IPs fallidas
+	if(!(Test-Path $IPs_FAILED)){
+		try {
+			New-Item -Path $IPs_FAILED -ItemType File -ErrorAction Stop | Out-Null
+		}
+		catch {
+			Write-Error -Message "No se puede crear el Archivo '$IPs_FAILED'. Error: $_" -ErrorAction Stop
+		}
+	}
 }
 
 # Credits to Martin9700
@@ -230,7 +243,7 @@ function runScanner(){
 				".*Touchstone.*" {"$line - Arris (No support)"; Break}
 				".*<title>Residential Gateway Configuration: Login</title>.*" {ubee $line; break}
 				".*<title>Residential Gateway Configuration: Cable Modem - Navigation</title>.*" {ubeeA $line; break}
-				default {$title; Break}
+				default {echo "$line - $title"; Break}
 			}
 		}
 	}
