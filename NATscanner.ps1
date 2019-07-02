@@ -3,27 +3,16 @@ $SAVE_FOLDER = "$ACTUAL_PATH\save";
 $IPs_LIST_PATH = "$ACTUAL_PATH\NATIp.txt";
 $IPs_FAILED = "$ACTUAL_PATH\Fail.txt";
 
-
-function isDownOK(){
-    return (([System.IO.File]::Exists($save) -and ((Get-Item $save).length) -gt 500))
-}
-
 function verifyFile(){
-	Try{
-		if([System.IO.File]::Exists($save)){
-			if((Get-Item $save).length -gt 500){
-				(Get-Content $save) -replace '\-', ':' | Set-Content $save;
-			}else{
-				Add-Content -Path "$IPs_FAILED" -Value "$line";
-				Remove-Item $save
-			}
-            
+	if([System.IO.File]::Exists($save)){
+		if((Get-Item $save).length -gt 500){
+			(Get-Content $save) -replace '\-', ':' | Set-Content $save;
 		}else{
-			echo "No se pudo obtener información. Verificar credenciales";
+			Add-Content -Path "$IPs_FAILED" -Value "$line";
+			Remove-Item $save
 		}
-	}
-	Catch{
-		echo "FAIL";
+	}else{
+		echo "No se pudo obtener información. Verificar credenciales";
 	}
 }
 
@@ -31,11 +20,11 @@ function createDirectory($DirectoryToCreate){
 	if (!(Test-Path -LiteralPath $DirectoryToCreate)) {
 		try {
 			New-Item -Path $DirectoryToCreate -ItemType Directory -ErrorAction Stop | Out-Null
+			"Directorio creado '$DirectoryToCreate'."
 		}
 		catch {
 			Write-Error -Message "No se puede crear el directorio '$DirectoryToCreate'. Error: $_" -ErrorAction Stop
 		}
-		"Directorio creado '$DirectoryToCreate'."
 	}
 }
 
@@ -49,7 +38,7 @@ function setup(){
 	#Crear directorio donde se guardará los resultados del escaner
 	createDirectory $SAVE_FOLDER
 
-		#Archivo donde se guardan las IPs fallidas
+	#Archivo donde se guardan las IPs fallidas
 	if(!(Test-Path $IPs_FAILED)){
 		try {
 			New-Item -Path $IPs_FAILED -ItemType File -ErrorAction Stop | Out-Null
@@ -135,7 +124,7 @@ function wan($ip){
 
 # Motorola con DOCSIS 2.0
 function motorola($ip){ 
-echo "$ip - Motorola DOCSIS 2.0" 
+	echo "$ip - Motorola DOCSIS 2.0" 
     curl --connect-timeout 3 -m 10 -s --data "loginUsername=admin&loginPassword=Uq-4GIt3M" http://$ip/goform/login | out-null;
     curl --connect-timeout 3 -m 10 -s --data "loginUsername=admin&loginPassword=Uq-4GIt3M" http://$ip/goform/login | out-null;
 	curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp | out-null;
@@ -145,9 +134,8 @@ echo "$ip - Motorola DOCSIS 2.0"
 
 # Motorola SBG900
 function motorolasbg($ip){ 
-echo "$ip - Motorola SBG900" 
-    if((Invoke-WebRequest -Uri "http://$ip/frames.asp" -Method "POST" -Headers @{"Cache-Control"="max-age=0"; "Origin"="$ip"; "Upgrade-Insecure-Requests"="1"; "DNT"="1"; "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36"; "Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"; "Referer"="http://$ip/index.asp"; "Accept-Encoding"="gzip, deflate"; "Accept-Language"="es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6"} -ContentType "application/x-www-form-urlencoded" -Body "userId=admin&password=Uq-4GIt3M&btnLogin=Log+In").content -match '\d\d\d\d\d')
-    {
+	echo "$ip - Motorola SBG900" 
+    if((Invoke-WebRequest -Uri "http://$ip/frames.asp" -Method "POST" -Headers @{"Cache-Control"="max-age=0"; "Origin"="$ip"; "Upgrade-Insecure-Requests"="1"; "DNT"="1"; "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36"; "Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"; "Referer"="http://$ip/index.asp"; "Accept-Encoding"="gzip, deflate"; "Accept-Language"="es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6"} -ContentType "application/x-www-form-urlencoded" -Body "userId=admin&password=Uq-4GIt3M&btnLogin=Log+In").content -match '\d\d\d\d\d'){
     $sessionID = $Matches[0]
     curl -o $save --connect-timeout 3 -m 60 -s http://$ip/wireless/wirelessStatus.asp?sessionId=$sessionID -H "Connection: keep-alive" -H "Upgrade-Insecure-Requests: 1" -H "DNT: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3" -H "Referer: http://$ip/wireless/tabs.asp?sessionId=29805" -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6" --compressed --insecure
     verifyFile
@@ -167,7 +155,7 @@ function unlockCisco($ip){
 
 # Cisco DPC2420
 function ciscoAuth($ip){
-echo "$ip - Cisco DPC2420" 
+	echo "$ip - Cisco DPC2420" 
 	unlockCisco $ip;
 	unlockCisco $ip;
 	curl --connect-timeout 3 -m 10 -s -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/webstar.html" -H "Connection: keep-alive" --compressed http://$ip/status.asp  | out-null;
@@ -207,7 +195,7 @@ function hitron($ip){
 
 # Ubee con DOCSIS 3.0
 function ubee($ip){
-echo "$ip - Ubee" 
+	echo "$ip - Ubee" 
     curl --connect-timeout 3 -m 10 -s -d "loginUsername=admin&loginPassword=Uq-4GIt3M" http://$ip/goform/login | out-null;
     curl --connect-timeout 3 -m 10 -s -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/wlanRadio.asp" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp | out-null;
     curl -o $save --connect-timeout 3 -m 60 -s -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/wlanRadio.asp" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp;
@@ -216,7 +204,7 @@ echo "$ip - Ubee"
 
 #Ubee sin DOCSIS
 function ubeeA($ip){
-echo "$ip - Ubee sin DOCSIS" 
+	echo "$ip - Ubee sin DOCSIS" 
     curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36" -H "Connection: keep-alive" --compressed http://$ip/wlanBasic.asp;
     curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36" -H "Connection: keep-alive" --compressed http://$ip/wlanBasic.asp;
     curl -o $save --connect-timeout 3 -m 60 -s -u admin:Uq-4GIt3M -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36" -H "Connection: keep-alive" --compressed http://$ip/wlanBasic.asp;
