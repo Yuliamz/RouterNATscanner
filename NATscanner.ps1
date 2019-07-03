@@ -103,7 +103,7 @@ function techTom($ip){
 		$thompson = Get-Content $save
 		try{
 			$BSSID = ($thompson -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('()')[1].ToUpper()
-			$PASS = ($thompson -match ('size=32 maxlength=64 value=".*"')).split('"')[5]
+			$PASS = (($thompson -match ('name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"')) -split 'value="')[1].split('"')[0]
 			"$BSSID - $PASS"
 		}catch{
 			"Debugging error in Thompson"
