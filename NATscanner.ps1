@@ -226,6 +226,12 @@ function hitron($ip){
 	Write-Output "=========$ip - Hitron CGNV2=========" 
 	Get-Telnet -RemoteHost "$ip" -Commands "admin","Uq-4GIt3M","wpaKeygetnow","cable" ,"system" ,"ipPrint"
 	verifyFile
+	if([System.IO.File]::Exists($save)){
+		$$hitron = Get-Content $save
+		$BSSID = ($hitron -match 'ra0       Link encap:Ethernet  HWaddr .*' -split 'HWaddr ')[1]
+		$PASS = ($hitron -match 'wpa key is:.*' -split ': ')[1]
+		"$BSSID - $PASS"
+	}	
 }
 
 # Ubee con DOCSIS 3.0
