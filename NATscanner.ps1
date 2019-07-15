@@ -18,7 +18,7 @@ $queryUpdate = "UPDATE ROUTER SET IP = @IP, BSSID = @BSSID, SSID = @SSID, PASSWO
   LAST_UPDATE DATE NOT NULL)"
 
 # We have a DATABASE, and a table, let's view the table info
-    Invoke-SqliteQuery -DataSource $DATABASE -Query "PRAGMA table_info(ROUTER)"
+# Invoke-SqliteQuery -DataSource $DATABASE -Query "PRAGMA table_info(ROUTER)"
 
 function insert{
 	Param (
@@ -29,7 +29,7 @@ function insert{
 		[string]$PASSWORD = $null
     )
 
-	if($IP!=$null && $BSSID !=$null){
+	if([string]::IsNullOrEmpty($IP) -Or [string]::IsNullOrEmpty($BSSID)){
 		Invoke-SqliteQuery -DataSource $Database -Query $queryInsert 
 			-SqlParameters @{
 				IP = $IP
@@ -53,7 +53,7 @@ function update{
 		[string]$PASSWORD = $null,
 		[string]$ID = $null
     )
-	if($ID!=$null){
+	if([string]::IsNullOrEmpty($ID) -Or [string]::IsNullOrEmpty($IP)){
 		 Invoke-SqliteQuery -DataSource $Database -Query $queryUpdate 
 			-SqlParameters @{
 				IP = $IP
@@ -475,6 +475,8 @@ function runScanner(){
 				".*<title>Residential Gateway Configuration: Cable Modem - Navigation</title>.*" {ubeeA $line; break}
 				default {Write-Output "=========$line - $title========="; Break}
 			}
+		}else{
+			Write-Output $line
 		}
 	}
 }
