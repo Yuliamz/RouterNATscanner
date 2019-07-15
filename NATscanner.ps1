@@ -29,7 +29,7 @@ function insert{
 		[string]$PASSWORD = $null
     )
 
-	if([string]::IsNullOrEmpty($IP) -Or [string]::IsNullOrEmpty($BSSID)){
+	if(![string]::IsNullOrEmpty($IP) -And ![string]::IsNullOrEmpty($BSSID)){
 		Invoke-SqliteQuery -DataSource $Database -Query $queryInsert 
 			-SqlParameters @{
 				IP = $IP
@@ -53,7 +53,7 @@ function update{
 		[string]$PASSWORD = $null,
 		[string]$ID = $null
     )
-	if([string]::IsNullOrEmpty($ID) -Or [string]::IsNullOrEmpty($IP)){
+	if(![string]::IsNullOrEmpty($ID) -And ![string]::IsNullOrEmpty($IP) -And ![string]::IsNullOrEmpty($BSSID) ){
 		 Invoke-SqliteQuery -DataSource $Database -Query $queryUpdate 
 			-SqlParameters @{
 				IP = $IP
@@ -64,7 +64,7 @@ function update{
 				ID = $ID
 			}
 	}else{
-		Write-Output "Cant update $BSSID. ID is null"
+		Write-Output "Cant update. ID or IP or BSSID are null"
 	}
 }
 
