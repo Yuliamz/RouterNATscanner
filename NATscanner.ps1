@@ -30,8 +30,7 @@ function insert{
     )
 
 	if(![string]::IsNullOrEmpty($IP) -And ![string]::IsNullOrEmpty($BSSID)){
-		Invoke-SqliteQuery -DataSource $Database -Query $queryInsert 
-			-SqlParameters @{
+		Invoke-SqliteQuery -DataSource $Database -Query $queryInsert -SqlParameters @{
 				IP = $IP
 				BSSID = $BSSID.ToUpper()
 				SSID = $SSID
@@ -51,11 +50,10 @@ function update{
         [string]$BSSID = $null,
 		[string]$SSID = $null,
 		[string]$PASSWORD = $null,
-		[string]$ID = $null
+		[Int]$ID = $null
     )
 	if(![string]::IsNullOrEmpty($ID) -And ![string]::IsNullOrEmpty($IP) -And ![string]::IsNullOrEmpty($BSSID) ){
-		 Invoke-SqliteQuery -DataSource $Database -Query $queryUpdate 
-			-SqlParameters @{
+		 Invoke-SqliteQuery -DataSource $Database -Query $queryUpdate -SqlParameters @{
 				IP = $IP
 				BSSID = $BSSID.ToUpper()
 				SSID = $SSID
@@ -82,7 +80,9 @@ function insertOrUpdate{
 	if([string]::IsNullOrEmpty($result)){
 		insert -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
 	}else{
-		update -IP $IP -BSSID $BSSID -SSID $SSID -PASSWORD $PASS -ID $result.idRouter
+		Write-Output $result;
+		$IDR = $result.idRouter;
+		update -IP $IP -BSSID $BSSID -SSID $SSID -PASSWORD $PASS -ID $IDR
 	}
 
 }
@@ -436,9 +436,9 @@ function ubee($ip){
 
 	if([System.IO.File]::Exists($save)){
 		$ubee = Get-Content $save
-		$SSID = ($ubee | Select-String -Pattern  '([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})').replace('<tr><td align=middle valign=top>','').split('(')[0].Trim()
-		$BSSID = ($ubee | Select-String -Pattern  '([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})').split('()')[1].Trim()
-		$PASS = (($ubee | Select-String -Pattern  ('name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"')) -split 'value="')[1].split('"')[0]
+		$SSID = ($ubee | Select-String -Pattern  '([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})').Line.replace('<tr><td align=middle valign=top>','').split('(')[0].Trim()
+		$BSSID = ($ubee | Select-String -Pattern  '([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})').Line.split('()')[1].Trim()
+		$PASS = (($ubee | Select-String -Pattern  'name="WpaPreSharedKey" size="*32"* maxlength="*64"* value=".*"').Line -split 'value="')[1].split('"')[0]
 		"$BSSID - $SSID - $PASS"
 		insertOrUpdate -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
 	}
