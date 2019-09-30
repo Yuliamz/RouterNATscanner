@@ -31,10 +31,10 @@ function insert{
 
 	if(![string]::IsNullOrEmpty($IP) -And ![string]::IsNullOrEmpty($BSSID)){
 		Invoke-SqliteQuery -DataSource $Database -Query $queryInsert -SqlParameters @{
-				IP = $IP
-				BSSID = $BSSID.ToUpper()
+				IP = $IP.Trim()
+				BSSID = $BSSID.ToUpper().Trim()
 				SSID = $SSID
-				PASSWORD = $PASSWORD
+				PASSWORD = $PASSWORD.Trim()
 				LAST_UPDATE  = (get-date)
 			}
 	}else{
@@ -54,10 +54,10 @@ function update{
     )
 	if(![string]::IsNullOrEmpty($ID) -And ![string]::IsNullOrEmpty($IP) -And ![string]::IsNullOrEmpty($BSSID) ){
 		 Invoke-SqliteQuery -DataSource $Database -Query $queryUpdate -SqlParameters @{
-				IP = $IP
-				BSSID = $BSSID.ToUpper()
+				IP = $IP.Trim()
+				BSSID = $BSSID.ToUpper().Trim()
 				SSID = $SSID
-				PASSWORD = $PASSWORD
+				PASSWORD = $PASSWORD.Trim()
 				LAST_UPDATE  = (get-date)
 				ID = $ID
 			}
@@ -75,7 +75,7 @@ function insertOrUpdate{
 		[string]$PASSWORD = $null
     )
 
-	$result = Invoke-SqliteQuery -DataSource $Database -Query $querySelect -SqlParameters @{BSSID = $BSSID.ToUpper()}
+	$result = Invoke-SqliteQuery -DataSource $Database -Query $querySelect -SqlParameters @{BSSID = $BSSID.ToUpper().Trim()}
 	
 	if([string]::IsNullOrEmpty($result)){
 		insert -IP $ip -BSSID $BSSID -SSID $SSID -PASSWORD $PASS
