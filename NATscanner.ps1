@@ -1,4 +1,6 @@
 Import-Module PSSQLite
+remove-item alias:curl
+remove-item alias:wget
 
 $ACTUAL_PATH = Get-Location;
 $SAVE_FOLDER = "$ACTUAL_PATH\save";
@@ -9,7 +11,8 @@ $queryInsert = "INSERT INTO ROUTER (IP,BSSID,SSID,PASSWORD,LAST_UPDATE) VALUES (
 $querySelect = "SELECT * FROM ROUTER WHERE BSSID LIKE @BSSID";
 $queryUpdate = "UPDATE ROUTER SET IP = @IP, BSSID = @BSSID, SSID = @SSID, PASSWORD = @PASSWORD, LAST_UPDATE = @LAST_UPDATE WHERE idRouter = @ID"
 
-    $Query = "CREATE TABLE ROUTER (
+<#
+$Query = "CREATE TABLE ROUTER (
   idRouter INTEGER PRIMARY KEY AUTOINCREMENT,
   IP VARCHAR(16) NOT NULL,
   BSSID VARCHAR(17) NOT NULL,
@@ -17,8 +20,9 @@ $queryUpdate = "UPDATE ROUTER SET IP = @IP, BSSID = @BSSID, SSID = @SSID, PASSWO
   PASSWORD VARCHAR(64) NULL,
   LAST_UPDATE DATE NOT NULL)"
 
-# We have a DATABASE, and a table, let's view the table info
-# Invoke-SqliteQuery -DataSource $DATABASE -Query "PRAGMA table_info(ROUTER)"
+We have a DATABASE, and a table, let's view the table info
+Invoke-SqliteQuery -DataSource $DATABASE -Query "PRAGMA table_info(ROUTER)"
+#>
 
 function insert{
 	Param (
