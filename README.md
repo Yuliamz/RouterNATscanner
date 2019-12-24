@@ -14,7 +14,7 @@ Save the info into a sqlite instance
 Take a look here: [Algolia-Router-Demo](https://www.algolia.com/realtime-search-demo/givemedashit)
 
 
-##Supported Routers
+## Supported Routers
 
 * Cisco DPC2420
 * Motorola SBG900
