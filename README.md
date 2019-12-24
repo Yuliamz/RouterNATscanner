@@ -11,8 +11,10 @@ Save the info into a sqlite instance
 ![Demostration](https://www.yuliamz.tech/images/portfolio/4-2.png)
 
 
-Take a look here: https://www.algolia.com/realtime-search-demo/givemedashit
-##Supported routers
+Take a look here: [Algolia-Router-Demo](https://www.algolia.com/realtime-search-demo/givemedashit)
+
+
+##Supported Routers
 
 * Cisco DPC2420
 * Motorola SBG900
@@ -22,5 +24,5 @@ Take a look here: https://www.algolia.com/realtime-search-demo/givemedashit
 * Technicolor CGA0101
 * Generic Technicolor, Ubee & Thompson with DOCSIS 2.0
 
-**Disclaimer**: just for research purposes, don't use it for illegal intentions
+**Disclaimer**: just for research purposes, don't use it for **illegal** intentions
  
